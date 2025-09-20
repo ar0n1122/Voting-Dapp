@@ -22,19 +22,47 @@ pub mod voting {
         Ok(())
     }
 
-    pub fn initialize_candidate(ctx: Context<InitializeCandidate>, name: String, poll_id: u64) -> Result<()>{
+    pub fn initialize_candidate(ctx: Context<InitializeCandidate>, name: String, _poll_id: u64) -> Result<()>{
         let candidate = &mut ctx.accounts.candidate;
         candidate.name = name;
-        candidate.poll_id = poll_id;
+        candidate.votes = 0;
         Ok(())
     }
 }
 
-
+#[derive(Accounts)]
+#[instruction(name: String, poll_id: u64)]
 pub struct InitializeCandidate<'info>{
+    #[account(mut)]
+    pub signer: Signer<'info>,
 
+    #[account(seeds = [poll_id.to_le_bytes().as_ref()],
+        bump)]
+    pub poll: Account<'info, Poll>,
+
+    #[account(
+        init,
+        payer = signer,
+        space = ANCHOR_ACCOUNT_DISCRIMINATOR + Candidate::INIT_SPACE,
+        seeds = [poll_id.to_le_bytes().as_ref(), name.as_bytes()],
+        bump
+    )]
+    pub candidate: Account<'info, Candidate>,
+
+    pub system_program: Program<'info, System>,
 }
 
+// Is the actual Candidate account on chain
+#[account]
+#[derive(InitSpace)]
+pub struct Candidate {
+    #[max_len(50)]
+    pub name: String,
+
+    pub votes: u64,
+}
+
+// Is The Instruction for Poll Account Initialization
 #[derive(Accounts)]
 #[instruction(poll_id: u64)]
 pub struct InitializePoll<'info> {
@@ -50,6 +78,8 @@ pub struct InitializePoll<'info> {
     pub system_program: Program<'info, System>,
 }
 
+
+// Is the actual Poll account on chain 
 #[account]
 #[derive(InitSpace)]
 pub struct Poll {
