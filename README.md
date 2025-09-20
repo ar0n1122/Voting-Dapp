@@ -1,4 +1,8 @@
-# gill-next-tailwind-counter
+# This is tutorial driven learning based on Solana Developer Bootcamp 2024
+
+Just starting out solana development.
+
+## gill-next-tailwind-counter
 
 This is a Next.js app containing:
 
