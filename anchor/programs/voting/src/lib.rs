@@ -24,11 +24,40 @@ pub mod voting {
 
     pub fn initialize_candidate(ctx: Context<InitializeCandidate>, name: String, _poll_id: u64) -> Result<()>{
         let candidate = &mut ctx.accounts.candidate;
+        let poll =&mut ctx.accounts.poll;
+        poll.candidate_amount += 1;
         candidate.name = name;
         candidate.votes = 0;
         Ok(())
     }
+
+    pub fn vote(ctx: Context<Vote>, _name: String, _poll_id: u64) -> Result<()>{
+        let candidate = &mut ctx.accounts.candidate;
+        candidate.votes += 1;
+        Ok(())
+    }
 }
+
+#[derive(Accounts)]
+#[instruction(name: String, poll_id: u64)]
+pub struct Vote<'info>{
+    #[account(mut)]
+    pub signer: Signer<'info>,
+
+    #[account(
+        mut,
+        seeds = [poll_id.to_le_bytes().as_ref()],
+        bump)]
+    pub poll: Account<'info, Poll>,
+
+    #[account(
+        mut,
+        seeds = [poll_id.to_le_bytes().as_ref(), name.as_bytes()],
+        bump
+    )]
+    pub candidate: Account<'info, Candidate>,
+}
+
 
 #[derive(Accounts)]
 #[instruction(name: String, poll_id: u64)]
@@ -36,7 +65,7 @@ pub struct InitializeCandidate<'info>{
     #[account(mut)]
     pub signer: Signer<'info>,
 
-    #[account(seeds = [poll_id.to_le_bytes().as_ref()],
+    #[account(mut, seeds = [poll_id.to_le_bytes().as_ref()],
         bump)]
     pub poll: Account<'info, Poll>,
 

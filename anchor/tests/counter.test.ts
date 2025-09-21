@@ -68,8 +68,35 @@ describe('Voting', () => {
     const aaronAccount = await votingProgram.account.candidate.fetch(aaronAddress)
 
     expect(aaronAccount.name).toEqual('Aaron')
+    expect(aaronAccount.votes.toNumber()).toEqual(0)
     console.log(aaronAccount)
   })
 
-  it('Vote', async () => {})
+  it('Vote', async () => {
+    const pollId = new BN(1) // Use bn.js BN, not anchor.BN
+    const name = 'Aaron'
+
+    // Poll PDA
+    const [pollAddress] = PublicKey.findProgramAddressSync(
+      [pollId.toArrayLike(Buffer, 'le', 8)],
+      votingProgram.programId,
+    )
+
+    // Candidate PDA
+    const [candidateAddress] = PublicKey.findProgramAddressSync(
+      [pollId.toArrayLike(Buffer, 'le', 8), Buffer.from(name)],
+      votingProgram.programId,
+    )
+
+    await votingProgram.methods
+      .vote(name, pollId) // Convert pollId to Buffer
+      .accounts({
+        poll: pollAddress,
+        candidate: candidateAddress,
+      })
+      .rpc()
+
+    const candidate = await votingProgram.account.candidate.fetch(candidateAddress)
+    expect(candidate.votes.toNumber()).toEqual(1)
+  })
 })
